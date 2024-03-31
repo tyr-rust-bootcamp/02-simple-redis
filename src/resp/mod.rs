@@ -135,6 +135,12 @@ impl RespMap {
     }
 }
 
+impl Default for RespMap {
+    fn default() -> Self {
+        RespMap::new()
+    }
+}
+
 impl RespSet {
     pub fn new(s: impl Into<Vec<RespFrame>>) -> Self {
         RespSet(s.into())
