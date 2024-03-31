@@ -29,12 +29,16 @@ pub trait CommandExecutor {
 }
 
 #[enum_dispatch(CommandExecutor)]
+#[derive(Debug)]
 pub enum Command {
     Get(Get),
     Set(Set),
     HGet(HGet),
     HSet(HSet),
     HGetAll(HGetAll),
+
+    // unrecognized command
+    Unrecognized(Unrecognized),
 }
 
 #[derive(Debug)]
@@ -66,6 +70,21 @@ pub struct HGetAll {
     key: String,
 }
 
+#[derive(Debug)]
+pub struct Unrecognized;
+
+impl TryFrom<RespFrame> for Command {
+    type Error = CommandError;
+    fn try_from(v: RespFrame) -> Result<Self, Self::Error> {
+        match v {
+            RespFrame::Array(array) => array.try_into(),
+            _ => Err(CommandError::InvalidCommand(
+                "Command must be an Array".to_string(),
+            )),
+        }
+    }
+}
+
 impl TryFrom<RespArray> for Command {
     type Error = CommandError;
     fn try_from(v: RespArray) -> Result<Self, Self::Error> {
@@ -76,15 +95,18 @@ impl TryFrom<RespArray> for Command {
                 b"hget" => Ok(HGet::try_from(v)?.into()),
                 b"hset" => Ok(HSet::try_from(v)?.into()),
                 b"hgetall" => Ok(HGetAll::try_from(v)?.into()),
-                _ => Err(CommandError::InvalidCommand(format!(
-                    "Invalid command: {}",
-                    String::from_utf8_lossy(cmd.as_ref())
-                ))),
+                _ => Ok(Unrecognized.into()),
             },
             _ => Err(CommandError::InvalidCommand(
                 "Command must have a BulkString as the first argument".to_string(),
             )),
         }
+    }
+}
+
+impl CommandExecutor for Unrecognized {
+    fn execute(self, _: &Backend) -> RespFrame {
+        RESP_OK.clone()
     }
 }
 
