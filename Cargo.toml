@@ -8,5 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.81"
 bytes = "1.6.0"
+dashmap = "5.5.3"
 enum_dispatch = "0.3.13"
+lazy_static = "1.4.0"
 thiserror = "1.0.58"
