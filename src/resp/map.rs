@@ -80,6 +80,12 @@ impl DerefMut for RespMap {
     }
 }
 
+impl From<BTreeMap<String, RespFrame>> for RespMap {
+    fn from(map: BTreeMap<String, RespFrame>) -> Self {
+        RespMap(map)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
