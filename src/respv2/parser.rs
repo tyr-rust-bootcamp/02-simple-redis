@@ -2,11 +2,11 @@ use crate::{
     BulkString, RespArray, RespError, RespFrame, RespMap, RespNull, RespNullArray,
     RespNullBulkString, SimpleError, SimpleString,
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, num::NonZeroUsize};
 use winnow::{
     ascii::{digit1, float},
     combinator::{alt, dispatch, fail, opt, preceded, terminated},
-    error::{ContextError, ErrMode},
+    error::{ContextError, ErrMode, Needed},
     token::{any, take, take_until},
     PResult, Parser,
 };
@@ -110,9 +110,16 @@ fn bulk_string_len(input: &mut &[u8]) -> PResult<()> {
     } else if len < -1 {
         return Err(err_cut("bulk string length must be non-negative"));
     }
-    terminated(take(len as usize), CRLF)
-        .value(())
-        .parse_next(input)
+
+    // we don't really need to parse the data, just skip it
+    // this is a good optimization
+    let len_with_crlf = len as usize + 2;
+    if input.len() < len_with_crlf {
+        let size = NonZeroUsize::new((len_with_crlf - input.len()) as usize).unwrap();
+        return Err(ErrMode::Incomplete(Needed::Size(size)));
+    }
+    *input = &input[(len + 2) as usize..];
+    Ok(())
 }
 
 // - null array: "*-1\r\n"

@@ -1,9 +1,9 @@
 mod parser;
 
-use self::parser::parse_frame_length;
 use crate::{RespError, RespFrame};
 use bytes::BytesMut;
-use parser::parse_frame;
+
+pub use self::parser::{parse_frame, parse_frame_length};
 
 pub trait RespDecodeV2: Sized {
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError>;
