@@ -75,12 +75,11 @@ fn error(input: &mut &[u8]) -> PResult<SimpleError> {
     parse_string.map(SimpleError).parse_next(input)
 }
 
-// - integer: ":1234\r\n"
+// - integer: ":-1234\r\n", need to take care of the sign
 fn integer(input: &mut &[u8]) -> PResult<i64> {
-    let sign = opt(alt(('+', '-'))).parse_next(input)?.unwrap_or('+');
-    let sign: i64 = if sign == '+' { 1 } else { -1 };
+    let sign = opt('-').parse_next(input)?.is_some();
     let v: i64 = terminated(digit1.parse_to(), CRLF).parse_next(input)?;
-    Ok(sign * v)
+    Ok(if sign { -v } else { v })
 }
 
 // - null bulk string: "$-1\r\n"
