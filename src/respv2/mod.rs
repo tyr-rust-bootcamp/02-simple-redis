@@ -145,19 +145,32 @@ mod tests {
 
     #[test]
     fn respv2_map_length_should_work() {
-        let buf = b"%2\r\n+OK\r\n-ERR\r\n";
+        let buf = b"%1\r\n+OK\r\n-ERR\r\n";
         let len = RespFrame::expect_length(buf).unwrap();
         assert_eq!(len, buf.len());
     }
 
     #[test]
     fn respv2_map_should_work() {
-        let mut buf = BytesMut::from("%2\r\n+OK\r\n-ERR\r\n");
+        let mut buf = BytesMut::from("%1\r\n+OK\r\n-ERR\r\n");
         let frame = RespFrame::decode(&mut buf).unwrap();
         let items: BTreeMap<String, RespFrame> =
             [("OK".to_string(), RespFrame::Error("ERR".into()))]
                 .into_iter()
                 .collect();
+        assert_eq!(frame, RespFrame::Map(items.into()));
+    }
+
+    #[test]
+    fn respv2_map_with_real_data_should_work() {
+        let mut buf = BytesMut::from("%2\r\n+hello\r\n$5\r\nworld\r\n+foo\r\n$3\r\nbar\r\n");
+        let frame = RespFrame::decode(&mut buf).unwrap();
+        let items: BTreeMap<String, RespFrame> = [
+            ("hello".to_string(), RespFrame::BulkString("world".into())),
+            ("foo".to_string(), RespFrame::BulkString("bar".into())),
+        ]
+        .into_iter()
+        .collect();
         assert_eq!(frame, RespFrame::Map(items.into()));
     }
 }

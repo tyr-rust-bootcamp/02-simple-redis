@@ -167,13 +167,13 @@ fn double(input: &mut &[u8]) -> PResult<f64> {
     terminated(float, CRLF).parse_next(input)
 }
 
-// - map: "%2\r\n+foo\r\n-bar\r\n"
+// my understanding of map len is incorrect: https://redis.io/docs/latest/develop/reference/protocol-spec/#maps
+// - map: "%1\r\n+foo\r\n-bar\r\n"
 fn map(input: &mut &[u8]) -> PResult<RespMap> {
     let len: i64 = integer.parse_next(input)?;
     if len <= 0 {
         return Err(err_cut("map length must be non-negative"));
     }
-    let len = len as usize / 2;
     let mut map = BTreeMap::new();
     for _ in 0..len {
         let key = preceded('+', parse_string).parse_next(input)?;
@@ -188,7 +188,6 @@ fn map_len(input: &mut &[u8]) -> PResult<()> {
     if len <= 0 {
         return Err(err_cut("map length must be non-negative"));
     }
-    let len = len as usize / 2;
     for _ in 0..len {
         terminated(take_until(0.., CRLF), CRLF)
             .value(())
